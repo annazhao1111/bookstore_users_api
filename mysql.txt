@@ -1,0 +1,15 @@
+
+// start mysql server:
+/usr/local/mysql/bin/mysql -u root -p
+
+// On MacOs Catalina Open a terminal and run.
+sudo nano /etc/paths
+
+// Added to end of file
+/usr/local/mysql/bin
+
+// Save the changes and quit. Reloaded terminal. Open a new terminal and run.
+mysql -u root -p
+
+// we can also type following command to connect to mysql database
+mysql -h localhost -P3006 -u root -p

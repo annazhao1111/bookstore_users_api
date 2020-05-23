@@ -3,6 +3,7 @@ package users
 import (
 	"fmt"
 
+	usersdb "github.com/annazhao/bookstore_users_api/datasources/mysql/users_db"
 	"github.com/annazhao/bookstore_users_api/utils/dates"
 	"github.com/annazhao/bookstore_users_api/utils/errors"
 )
@@ -14,6 +15,10 @@ var usersDB = make(map[int64]*User)
 
 // Get method is used to retrieve the user by ID from database
 func (user *User) Get() *errors.RestErr {
+	if err := usersdb.Client.Ping(); err != nil {
+		panic(err)
+	}
+
 	result := usersDB[user.ID]
 	if result == nil {
 		return errors.NewNotFoundError(fmt.Sprintf("user %d not found", user.ID))
