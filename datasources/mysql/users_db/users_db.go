@@ -40,6 +40,7 @@ func init() {
 		password,
 		host,
 		schema)
+
 	var err error
 	Client, err = sql.Open("mysql", dataSourceName)
 	if err != nil {
