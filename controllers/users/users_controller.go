@@ -10,8 +10,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateUser function here is used to parse the JSON data from request body to a new User instance, and save it into the database
-func CreateUser(c *gin.Context) {
+func getUserID(userIDParam string) (int64, *errors.RestErr) {
+	userID, userErr := strconv.ParseInt(userIDParam, 10, 64)
+	if userErr != nil {
+		return 0, errors.NewBadRequestError("user id should be a number")
+	}
+	return userID, nil
+}
+
+// Create function here is used to parse the JSON data from request body to a new User instance, and save it into the database
+func Create(c *gin.Context) {
 	var user users.User
 
 	// // first way to get the user is from JSON request body
@@ -48,14 +56,12 @@ func CreateUser(c *gin.Context) {
 
 }
 
-// GetUser is to find user from database based on the user_id value in url parameter
-func GetUser(c *gin.Context) {
+// Get is to find user from database based on the user_id value in url parameter
+func Get(c *gin.Context) {
 	// c.Param("user_id") is to get the parameter value in url /users/:user_id
-	userID, userErr := strconv.ParseInt(c.Param("user_id"), 10, 64)
-	if userErr != nil {
-		err := errors.NewBadRequestError("user id should be a number")
-		c.JSON(err.Status, err)
-		return
+	userID, idErr := getUserID(c.Param("user_id"))
+	if idErr != nil {
+		c.JSON(idErr.Status, idErr)
 	}
 
 	user, getErr := services.GetUser(userID)
@@ -66,14 +72,12 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// UpdateUser is to update user in database
-func UpdateUser(c *gin.Context) {
+// Update is to update user in database
+func Update(c *gin.Context) {
 	// first get user_id from url
-	userID, userErr := strconv.ParseInt(c.Param("user_id"), 10, 64)
-	if userErr != nil {
-		err := errors.NewBadRequestError("user id should be a number")
-		c.JSON(err.Status, err)
-		return
+	userID, idErr := getUserID(c.Param("user_id"))
+	if idErr != nil {
+		c.JSON(idErr.Status, idErr)
 	}
 
 	var user users.User
@@ -93,4 +97,19 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+// Delete is to delete user in database
+func Delete(c *gin.Context) {
+	// first get user_id from url
+	userID, idErr := getUserID(c.Param("user_id"))
+	if idErr != nil {
+		c.JSON(idErr.Status, idErr)
+	}
+
+	if err := services.DeleteUser(userID); err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
