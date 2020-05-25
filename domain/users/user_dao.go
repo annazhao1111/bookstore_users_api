@@ -1,20 +1,18 @@
 package users
 
 import (
-	"fmt"
-	"strings"
-
 	usersdb "github.com/annazhao/bookstore_users_api/datasources/mysql/users_db"
 	"github.com/annazhao/bookstore_users_api/utils/dates"
 	"github.com/annazhao/bookstore_users_api/utils/errors"
+	"github.com/annazhao/bookstore_users_api/utils/mysqls"
 )
 
 // here we will have the access layer to our database
 
 const (
-	indexUniqueEmail = "email_UNIQUE"
-	queryInsertUser  = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?, ?, ?, ?);"
-	queryGetUser     = "SELECT id, first_name, last_name, email, date_created FROM users WHERE id=?;"
+	queryInsertUser = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?, ?, ?, ?);"
+	queryGetUser    = "SELECT id, first_name, last_name, email, date_created FROM users WHERE id=?;"
+	queryUpdateUser = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
 )
 
 // Get method is used to retrieve the user by ID from database
@@ -25,10 +23,11 @@ func (user *User) Get() *errors.RestErr {
 	}
 	defer stmt.Close()
 
+	// QueryRow only get back 1 row from the result dataset
+	// Query will get back *Rows, if using stmt.Query(user.ID), we need add defer result.Close()
 	result := stmt.QueryRow(user.ID)
-	if err := result.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); err != nil {
-		fmt.Println(err)
-		return errors.NewInternalServerError(fmt.Sprintf("error when trying to get user %d: %s", user.ID, err.Error()))
+	if getErr := result.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); getErr != nil {
+		return mysqls.ParseError(getErr)
 	}
 	return nil
 }
@@ -43,18 +42,30 @@ func (user *User) Save() *errors.RestErr {
 	defer stmt.Close() // this is very important
 
 	user.DateCreated = dates.GetNowString()
-	insertResult, err := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
-	if err != nil {
-		if strings.Contains(err.Error(), indexUniqueEmail) {
-			return errors.NewBadRequestError(fmt.Sprintf("email %s already exists", user.Email))
-		}
-		return errors.NewInternalServerError(fmt.Sprintf("error when trying to save user: %s", err.Error()))
+	insertResult, saveErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
+	if saveErr != nil {
+		return mysqls.ParseError(saveErr)
 	}
 
 	userID, err := insertResult.LastInsertId()
 	if err != nil {
-		return errors.NewInternalServerError(fmt.Sprintf("error when trying to save user: %s", err.Error()))
+		return mysqls.ParseError(err)
 	}
 	user.ID = userID
+	return nil
+}
+
+// Update method is used to update the user in the database
+func (user *User) Update() *errors.RestErr {
+	stmt, err := usersdb.Client.Prepare(queryUpdateUser)
+	if err != nil {
+		return errors.NewInternalServerError(err.Error())
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(user.FirstName, user.LastName, user.Email, user.ID)
+	if err != nil {
+		return mysqls.ParseError(err)
+	}
 	return nil
 }

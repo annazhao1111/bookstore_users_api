@@ -66,6 +66,31 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// func SearchUser(c *gin.Context) {
-// 	c.String(http.StatusNotImplemented, "implement me!")
-// }
+// UpdateUser is to update user in database
+func UpdateUser(c *gin.Context) {
+	// first get user_id from url
+	userID, userErr := strconv.ParseInt(c.Param("user_id"), 10, 64)
+	if userErr != nil {
+		err := errors.NewBadRequestError("user id should be a number")
+		c.JSON(err.Status, err)
+		return
+	}
+
+	var user users.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		restErr := errors.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+	user.ID = userID
+
+	// if it's PUT method, isPartial will be false; if it's PATCH, isPartial will be true
+	isPartial := c.Request.Method == http.MethodPatch
+
+	result, err := services.UpdateUser(isPartial, user)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}

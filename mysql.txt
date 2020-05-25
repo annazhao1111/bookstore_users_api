@@ -12,4 +12,30 @@ sudo nano /etc/paths
 mysql -u root -p
 
 // we can also type following command to connect to mysql database
-mysql -h localhost -P3006 -u root -p
+mysql -h localhost -P3306 -u root -p
+
+
+// set up environment variables
+1. echo 'export mysql_users_username=root' >> ~/.zshenv
+2. source ~/.zshenv
+3. echo $mysql_users_username
+----------------------------------------------------------
+1. echo 'export mysql_users_password=czy20130520' >> ~/.zshenv
+2. source ~/.zshenv
+3. echo $mysql_users_password
+----------------------------------------------------------
+1. echo 'export mysql_users_host=127.0.0.1:3306' >> ~/.zshenv
+2. source ~/.zshenv
+3. echo $mysql_users_host
+----------------------------------------------------------
+1. echo 'export mysql_users_schema=users_db' >> ~/.zshenv
+2. source ~/.zshenv
+3. echo $mysql_users_schema
+----------------------------------------------------------
+// type env in Terminal to see all environment variables
+
+
+
+
+
+

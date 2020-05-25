@@ -26,11 +26,7 @@ var (
 
 // should set up these environment variables in configuration files:
 // Run-->Open Configurations, then add env variables and values in "env": {}
-// then in terminal, export these env variables with the commands:
-// export mysql_users_username=root  // use: echo $mysql_users_username to see value
-// export mysql_users_password=czy20130520
-// export mysql_users_host=127.0.0.1:3306
-// export mysql_users_schema=users_db
+// then in terminal, export these env variables with the commands in mysql.txt file
 
 // connect to database
 func init() {

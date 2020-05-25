@@ -16,6 +16,9 @@ type User struct {
 
 // Validate method is to validate if the user's email is not empty for now
 func (user *User) Validate() *errors.RestErr {
+	user.FirstName = strings.TrimSpace(user.FirstName)
+	user.LastName = strings.TrimSpace(user.LastName)
+
 	user.Email = strings.TrimSpace(strings.ToLower(user.Email))
 	if user.Email == "" {
 		return errors.NewBadRequestError("invalid email address")
