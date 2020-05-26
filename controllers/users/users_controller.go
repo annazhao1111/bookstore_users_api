@@ -21,29 +21,12 @@ func getUserID(userIDParam string) (int64, *errors.RestErr) {
 // Create function here is used to parse the JSON data from request body to a new User instance, and save it into the database
 func Create(c *gin.Context) {
 	var user users.User
-
-	// // first way to get the user is from JSON request body
-	// // *************************
-	// bytes, err := ioutil.ReadAll(c.Request.Body)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return
-	// }
-	// err = json.Unmarshal(bytes, &user)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return
-	// }
-	// // *************************
-
-	// second way to get the user from JSON request body
-	// *************************
+	// get the user from JSON request body
 	if err := c.ShouldBindJSON(&user); err != nil {
 		restErr := errors.NewBadRequestError("invalid json body")
 		c.JSON(restErr.Status, restErr)
 		return
 	}
-	// *************************
 
 	// create this user, and save it into the database
 	result, saveErr := services.CreateUser(user)
@@ -52,7 +35,7 @@ func Create(c *gin.Context) {
 		return
 	}
 	// return back a JSON result
-	c.JSON(http.StatusCreated, result)
+	c.JSON(http.StatusCreated, result.Marshal(c.GetHeader("X-Public") == "true"))
 
 }
 
@@ -69,7 +52,9 @@ func Get(c *gin.Context) {
 		c.JSON(getErr.Status, getErr)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+
+	// to see whether it's a public request or private, we can see from "X-Public" in request header
+	c.JSON(http.StatusOK, user.Marshal(c.GetHeader("X-Public") == "true"))
 }
 
 // Update is to update user in database
@@ -96,7 +81,7 @@ func Update(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, result.Marshal(c.GetHeader("X-Public") == "true"))
 }
 
 // Delete is to delete user in database
@@ -123,5 +108,7 @@ func Search(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	c.JSON(http.StatusOK, users)
+
+	// services.Search returns a slice of user
+	c.JSON(http.StatusOK, users.Marshal(c.GetHeader("X-Public") == "true"))
 }

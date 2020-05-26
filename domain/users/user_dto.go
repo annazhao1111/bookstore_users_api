@@ -18,8 +18,11 @@ type User struct {
 	Email       string `json:"email"`
 	DateCreated string `json:"date_created"`
 	Status      string `json:"status"`
-	Password    string `json:"-"`
+	Password    string `json:"password"`
 }
+
+// Users is the type of a slice of User
+type Users []User
 
 // Validate method is to validate if the user's email is not empty for now
 func (user *User) Validate() *errors.RestErr {
