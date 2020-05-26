@@ -1,8 +1,9 @@
 package users
 
 import (
+	"fmt"
+
 	usersdb "github.com/annazhao/bookstore_users_api/datasources/mysql/users_db"
-	"github.com/annazhao/bookstore_users_api/utils/dates"
 	"github.com/annazhao/bookstore_users_api/utils/errors"
 	"github.com/annazhao/bookstore_users_api/utils/mysqls"
 )
@@ -10,10 +11,11 @@ import (
 // here we will have the access layer to our database
 
 const (
-	queryInsertUser = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?, ?, ?, ?);"
-	queryGetUser    = "SELECT id, first_name, last_name, email, date_created FROM users WHERE id=?;"
-	queryUpdateUser = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
-	queryDeleteUser = "DELETE FROM users WHERE id=?;"
+	queryInsertUser       = "INSERT INTO users(first_name, last_name, email, date_created, status, password) VALUES(?, ?, ?, ?, ?, ?);"
+	queryGetUser          = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE id=?;"
+	queryUpdateUser       = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
+	queryDeleteUser       = "DELETE FROM users WHERE id=?;"
+	queryFindUserByStatus = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;"
 )
 
 // Get method is used to retrieve the user by ID from database
@@ -27,7 +29,7 @@ func (user *User) Get() *errors.RestErr {
 	// QueryRow only get back 1 row from the result dataset
 	// Query will get back *Rows, if using stmt.Query(user.ID), we need add defer result.Close()
 	result := stmt.QueryRow(user.ID)
-	if getErr := result.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated); getErr != nil {
+	if getErr := result.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); getErr != nil {
 		return mysqls.ParseError(getErr)
 	}
 	return nil
@@ -42,8 +44,7 @@ func (user *User) Save() *errors.RestErr {
 	}
 	defer stmt.Close() // this is very important
 
-	user.DateCreated = dates.GetNowString()
-	insertResult, saveErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated)
+	insertResult, saveErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.DateCreated, user.Status, user.Password)
 	if saveErr != nil {
 		return mysqls.ParseError(saveErr)
 	}
@@ -83,4 +84,33 @@ func (user *User) Delete() *errors.RestErr {
 		return mysqls.ParseError(err)
 	}
 	return nil
+}
+
+// FindByStatus method is used to find users from the database based on status
+func (user *User) FindByStatus(status string) ([]User, *errors.RestErr) {
+	stmt, err := usersdb.Client.Prepare(queryFindUserByStatus)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err.Error())
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(status)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err.Error())
+	}
+	defer rows.Close()
+
+	results := make([]User, 0)
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); err != nil {
+			return nil, mysqls.ParseError(err)
+		}
+		results = append(results, user)
+	}
+
+	if len(results) == 0 {
+		return nil, errors.NewNotFoundError(fmt.Sprintf("no users matching status %s", status))
+	}
+	return results, nil
 }

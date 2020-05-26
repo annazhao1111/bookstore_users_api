@@ -113,3 +113,15 @@ func Delete(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
+
+// Search is used to find users in database
+func Search(c *gin.Context) {
+	// in url: /internal/users/search?status=active, if we want to get "active" status, we need to use c.Query()
+	status := c.Query("status")
+	users, err := services.Search(status)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
