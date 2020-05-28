@@ -1,6 +1,8 @@
 package errors
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // RestErr is a comman error struct that will be used in all apis
 type RestErr struct {
@@ -8,6 +10,10 @@ type RestErr struct {
 	Status  int    `json:"status"`
 	Error   string `json:"error"`
 }
+
+// func NewError(msg string) error {
+// 	return errors.New(msg)
+// }
 
 // NewBadRequestError is a function to create new bad request error
 func NewBadRequestError(message string) *RestErr {

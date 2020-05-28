@@ -29,7 +29,7 @@ func Create(c *gin.Context) {
 	}
 
 	// create this user, and save it into the database
-	result, saveErr := services.CreateUser(user)
+	result, saveErr := services.UsersService.CreateUser(user)
 	if saveErr != nil {
 		c.JSON(saveErr.Status, saveErr)
 		return
@@ -47,7 +47,7 @@ func Get(c *gin.Context) {
 		c.JSON(idErr.Status, idErr)
 	}
 
-	user, getErr := services.GetUser(userID)
+	user, getErr := services.UsersService.GetUser(userID)
 	if getErr != nil {
 		c.JSON(getErr.Status, getErr)
 		return
@@ -76,7 +76,7 @@ func Update(c *gin.Context) {
 	// if it's PUT method, isPartial will be false; if it's PATCH, isPartial will be true
 	isPartial := c.Request.Method == http.MethodPatch
 
-	result, err := services.UpdateUser(isPartial, user)
+	result, err := services.UsersService.UpdateUser(isPartial, user)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
@@ -92,7 +92,7 @@ func Delete(c *gin.Context) {
 		c.JSON(idErr.Status, idErr)
 	}
 
-	if err := services.DeleteUser(userID); err != nil {
+	if err := services.UsersService.DeleteUser(userID); err != nil {
 		c.JSON(err.Status, err)
 		return
 	}
@@ -103,7 +103,7 @@ func Delete(c *gin.Context) {
 func Search(c *gin.Context) {
 	// in url: /internal/users/search?status=active, if we want to get "active" status, we need to use c.Query()
 	status := c.Query("status")
-	users, err := services.Search(status)
+	users, err := services.UsersService.SearchUser(status)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
