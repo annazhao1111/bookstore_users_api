@@ -112,3 +112,20 @@ func Search(c *gin.Context) {
 	// services.Search returns a slice of user
 	c.JSON(http.StatusOK, users.Marshal(c.GetHeader("X-Public") == "true"))
 }
+
+// Login is use to find user by email and password in database, then create access token
+func Login(c *gin.Context) {
+	var request users.LoginRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		restErr := errors.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+
+	user, err := services.UsersService.LoginUser(request)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	c.JSON(http.StatusOK, user.Marshal(c.GetHeader("X-Public") == "true"))
+}

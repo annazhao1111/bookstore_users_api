@@ -7,13 +7,13 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-const errorNoRows = "no rows in result set"
+const ErrorNoRows = "no rows in result set"
 
 // ParseError is used to handle errors related to mysql database process
 func ParseError(err error) *errors.RestErr {
 	sqlErr, ok := err.(*mysql.MySQLError)
 	if !ok {
-		if strings.Contains(err.Error(), errorNoRows) {
+		if strings.Contains(err.Error(), ErrorNoRows) {
 			return errors.NewNotFoundError("no record matching given id")
 		}
 		return errors.NewInternalServerError("error parsing database response")

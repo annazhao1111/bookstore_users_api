@@ -2,20 +2,23 @@ package users
 
 import (
 	"fmt"
+	"strings"
 
 	usersdb "github.com/annazhao/bookstore_users_api/datasources/mysql/users_db"
 	"github.com/annazhao/bookstore_users_api/logger"
 	"github.com/annazhao/bookstore_users_api/utils/errors"
+	"github.com/annazhao/bookstore_users_api/utils/mysqls"
 )
 
 // here we will have the access layer to our database
 
 const (
-	queryInsertUser       = "INSERT INTO users(first_name, last_name, email, date_created, status, password) VALUES(?, ?, ?, ?, ?, ?);"
-	queryGetUser          = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE id=?;"
-	queryUpdateUser       = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
-	queryDeleteUser       = "DELETE FROM users WHERE id=?;"
-	queryFindUserByStatus = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;"
+	queryInsertUser             = "INSERT INTO users(first_name, last_name, email, date_created, status, password) VALUES(?, ?, ?, ?, ?, ?);"
+	queryGetUser                = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE id=?;"
+	queryUpdateUser             = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
+	queryDeleteUser             = "DELETE FROM users WHERE id=?;"
+	queryFindByStatus           = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;"
+	queryFindByEmailAndPassword = "SELECT id, first_name, last_name, email, date_created, status FROM users WHERE email=? AND password=? AND status=?;"
 )
 
 // Get method is used to retrieve the user by ID from database
@@ -104,7 +107,7 @@ func (user *User) Delete() *errors.RestErr {
 
 // FindByStatus method is used to find users from the database based on status
 func (user *User) FindByStatus(status string) ([]User, *errors.RestErr) {
-	stmt, err := usersdb.Client.Prepare(queryFindUserByStatus)
+	stmt, err := usersdb.Client.Prepare(queryFindByStatus)
 	if err != nil {
 		logger.Error("error when trying to prepare find user by status statement", err)
 		return nil, errors.NewInternalServerError("database error")
@@ -133,4 +136,24 @@ func (user *User) FindByStatus(status string) ([]User, *errors.RestErr) {
 		return nil, errors.NewNotFoundError(fmt.Sprintf("no users matching status %s", status))
 	}
 	return results, nil
+}
+
+// FindByEmailAndPassword method is used to retrieve the user by email and password for oauth api from database
+func (user *User) FindByEmailAndPassword() *errors.RestErr {
+	stmt, err := usersdb.Client.Prepare(queryFindByEmailAndPassword)
+	if err != nil {
+		logger.Error("error when trying to prepare find user by email and password statement", err)
+		return errors.NewInternalServerError("database error")
+	}
+	defer stmt.Close()
+
+	result := stmt.QueryRow(user.Email, user.Password, StatusActive)
+	if getErr := result.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status); getErr != nil {
+		if strings.Contains(getErr.Error(), mysqls.ErrorNoRows) {
+			return errors.NewNotFoundError("invalid user credentials")
+		}
+		logger.Error("error when trying to get user by email and password", getErr)
+		return errors.NewInternalServerError("database error")
+	}
+	return nil
 }

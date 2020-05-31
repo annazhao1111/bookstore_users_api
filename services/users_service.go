@@ -21,6 +21,7 @@ type usersServiceInterface interface {
 	UpdateUser(bool, user users.User) (*users.User, *errors.RestErr)
 	DeleteUser(int64) *errors.RestErr
 	SearchUser(string) (users.Users, *errors.RestErr)
+	LoginUser(users.LoginRequest) (*users.User, *errors.RestErr)
 }
 
 // CreateUser function here is used to create a user record in database
@@ -95,4 +96,16 @@ func (s *usersService) SearchUser(status string) (users.Users, *errors.RestErr) 
 	// 	return nil, err
 	// }
 	// return userSlice, nil
+}
+
+// LoginUser is use to find user by email and password in database, then create access token
+func (s *usersService) LoginUser(request users.LoginRequest) (*users.User, *errors.RestErr) {
+	user := &users.User{
+		Email:    request.Email,
+		Password: cryptos.GetMd5(request.Password),
+	}
+	if err := user.FindByEmailAndPassword(); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
